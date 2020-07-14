@@ -1,16 +1,28 @@
-import React, { Component } from 'react';
-import { View } from 'react-native';
-import MapView from 'react-native-maps';
+import React, { Component, Fragment } from 'react';
+import { View, Image } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import Search from '../Search';
 import Directions from '../Directions';
 import { getPixelSize } from '../../utils';
+import MarkerImage from '../../assets/marker.png';
+import backimage from '../../assets/back.png';
+
+import { Back, LocationBox, LocationText, LocationTimeBox, LocationTimeText, LocationTimeTextSmall } from './styles';
+import Geocoder from 'react-native-geocoding';
+import Details from '../Details';
+
+Geocoder.init("AIzaSyBbboRUE6QH6yXO01xhb72VsQ3eUDkmLUQ");
+
 
 export default class Map extends Component {
   state = {
     region: null,
-    destination: null
+    destination: null,
+    duration: null,
+    location: null,
   }
+
 
   handleLocationSelected = (data, { geometry }) => {
     const { location: { lat: latitude, lng: longitude } } = geometry;
@@ -28,7 +40,17 @@ export default class Map extends Component {
 
   async componentDidMount() {
     Geolocation.getCurrentPosition(
-      ({ coords: { latitude, longitude } }) => {
+      async ({ coords: { latitude, longitude } }) => {
+
+        Geocoder.from({ latitude, longitude })
+          .then(resp => {
+            const address = resp.results[0].formatted_address;
+            const location = address.substring(0, address.indexOf(','));
+            this.setState({
+              location
+            })
+          })
+          .catch(error => console.warn(error));
         this.setState({
           region: {
             latitude,
@@ -47,9 +69,15 @@ export default class Map extends Component {
     );
   }
 
+  handleBack = () => {
+    this.setState({
+      destination: null
+    })
+  }
+
   render() {
 
-    const { region, destination } = this.state;
+    const { region, destination, duration, location } = this.state;
     return (
       <View style={{ flex: 1 }}>
         <MapView
@@ -61,24 +89,58 @@ export default class Map extends Component {
         >
           {
             destination && (
-              <Directions
-                origin={region}
-                destination={destination}
-                onReady={(result) => {
-                  this.MapView.fitToCoordinates(result.coordinates, {
-                    edgePadding: {
-                      right: getPixelSize(50),
-                      left: getPixelSize(50),
-                      top: getPixelSize(50),
-                      bottom: getPixelSize(50),
-                    }
-                  });
-                }}
-              />
+              <Fragment>
+                <Directions
+                  origin={region}
+                  destination={destination}
+                  onReady={(result) => {
+                    this.setState({ duration: Math.floor(result.duration) });
+                    this.MapView.fitToCoordinates(result.coordinates, {
+                      edgePadding: {
+                        right: getPixelSize(50),
+                        left: getPixelSize(50),
+                        top: getPixelSize(50),
+                        bottom: getPixelSize(350),
+                      }
+                    });
+                  }}
+                />
+                <Marker
+                  coordinate={destination}
+                  anchor={{ x: 0, y: 0 }}
+                  image={MarkerImage}
+                >
+                  <LocationBox>
+                    <LocationText>{destination.title}</LocationText>
+                  </LocationBox>
+                </Marker>
+                <Marker
+                  coordinate={region}
+                  anchor={{ x: 0, y: 0 }}
+                >
+                  <LocationBox>
+                    <LocationTimeBox>
+                      <LocationTimeText>{duration}</LocationTimeText>
+                      <LocationTimeTextSmall>Min</LocationTimeTextSmall>
+                    </LocationTimeBox>
+                    <LocationText>{location}</LocationText>
+                  </LocationBox>
+                </Marker>
+              </Fragment>
             )
           }
         </MapView>
-        <Search onLocationSelected={this.handleLocationSelected} />
+        {destination
+          ? (
+            <Fragment>
+              <Back onPress={this.handleBack}>
+                <Image source={backimage} />
+              </Back>
+              <Details />
+            </Fragment>
+          )
+          : (<Search onLocationSelected={this.handleLocationSelected} />)}
+
       </View >
     )
   };

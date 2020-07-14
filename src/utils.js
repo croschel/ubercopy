@@ -5,4 +5,4 @@ export function getPixelSize(pixels) {
     ios: pixels,
     android: PixelRatio.getPixelSizeForLayoutSize(pixels)
   })
-}
+} 
