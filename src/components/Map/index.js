@@ -12,7 +12,7 @@ import { Back, LocationBox, LocationText, LocationTimeBox, LocationTimeText, Loc
 import Geocoder from 'react-native-geocoding';
 import Details from '../Details';
 
-Geocoder.init("AIzaSyBbboRUE6QH6yXO01xhb72VsQ3eUDkmLUQ");
+Geocoder.init("googleapikey");
 
 
 export default class Map extends Component {
